@@ -247,14 +247,14 @@ def get_tierlist(n: int = 10, lane: str = '', rank: str = '', region: str = ''):
     """
     base_url = 'https://lolalytics.com/lol/tierlist/'
 
-    if region:
-        base_url = _sort_by_region(base_url, region)
-
     if lane:
         base_url = _sort_by_lane(base_url, lane)
 
     if rank:
         base_url = _sort_by_rank(base_url, rank)
+
+    if region:
+        base_url = _sort_by_region(base_url, region)
 
     tierlist_html = requests.get(base_url)
     tree = html.fromstring(tierlist_html.content)
@@ -281,7 +281,7 @@ def get_tierlist(n: int = 10, lane: str = '', rank: str = '', region: str = ''):
     return json.dumps(result, indent=4)
 
 
-def get_counters(n: int = 10, champion: str = '', rank: str = '', region: str = ''):
+def get_counters(n: int = 10, champion: str = '', rank: str = ''):
     """
     Get the top n counters for a specific champion.
     :param n: number of counters to return.
@@ -295,9 +295,6 @@ def get_counters(n: int = 10, champion: str = '', rank: str = '', region: str = 
     counters = f'https://lolalytics.com/lol/{champion}/counters/'
     if rank:
         counters = _sort_by_rank(counters, rank)
-
-    if region:
-        counters = _sort_by_region(counters, region)
 
     counters_html = requests.get(counters)
     tree = html.fromstring(counters_html.content)

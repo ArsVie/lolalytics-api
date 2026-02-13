@@ -113,6 +113,69 @@ def display_lanes(display: bool = True) -> dict:
     else:
         return lane_mappings
 
+def display_regions(display: bool = True) -> dict:
+    """
+    Display all available regions and their shortcuts.
+    :param display: If True (default), prints the regions to the console. Otherwise, returns a dict.
+    :return: None or dict of regions if display is False.
+    """
+    region_mappings = {
+        '': '',
+        'global': '',
+        'glob': '',
+        'world': '',
+        'all': '',
+        'br': 'br',
+        'brazil': 'br',
+        'eune': 'eune',
+        'europe nordic east': 'eune',
+        'nordic': 'eune',
+        'euw': 'euw',
+        'europe west': 'euw',
+        'eu': 'euw',
+        'jp': 'jp',
+        'japan': 'jp',
+        'kr': 'kr',
+        'korea': 'kr',
+        'lan': 'lan',
+        'latin america north': 'lan',
+        'las': 'las',
+        'latin america south': 'las',
+        'na': 'na',
+        'north america': 'na',
+        'oce': 'oce',
+        'oceania': 'oce',
+        'ru': 'ru',
+        'russia': 'ru',
+        'sg': 'sg',
+        'singapore': 'sg',
+        'tr': 'tr',
+        'turkey': 'tr',
+        'tw': 'tw',
+        'taiwan': 'tw',
+        'vn': 'vn',
+        'vietnam': 'vn'
+    }
+    if display:
+        print("Available regions and their shortcuts:")
+        print("  Global: global, glob, world, all, '' (default)")
+        print("  BR: br, brazil")
+        print("  EUNE: eune, nordic")
+        print("  EUW: euw, eu")
+        print("  JP: jp, japan")
+        print("  KR: kr, korea")
+        print("  LAN: lan")
+        print("  LAS: las")
+        print("  NA: na")
+        print("  OCE: oce, oceania")
+        print("  RU: ru, russia")
+        print("  SG: sg, singapore")
+        print("  TR: tr, turkey")
+        print("  TW: tw, taiwan")
+        print("  VN: vn, vietnam")
+    else:
+        return region_mappings
+
 
 def _sort_by_rank(link: str, rank: str) -> str:
     """
@@ -151,16 +214,41 @@ def _sort_by_lane(link: str, lane: str) -> str:
     else:
         return f'{link}?lane={mapped_lane}'
 
+def _sort_by_region(link: str, region: str) -> str:
+    """
+    Update the link to filter by a specific region.
+    :param link: url to the page to filter.
+    :param region: region to filter by (see ``display_regions()``).
+    :return: new link with the region filter applied.
+    """
+    region_mappings = display_regions(display=False)
+    try:
+        mapped_region = region_mappings[region.lower()]
+    except KeyError:
+        raise InvalidRegion(region)
 
-def get_tierlist(n: int = 10, lane: str = '', rank: str = ''):
+    # If mapped_region is empty string, it means global - don't add region parameter
+    if not mapped_region:
+        return link
+
+    if '?' in link:
+        return f'{link}&region={mapped_region}'
+    else:
+        return f'{link}?region={mapped_region}'
+
+def get_tierlist(n: int = 10, lane: str = '', rank: str = '', region: str = ''):
     """
     Get the top n champions in the tier list for a specific lane.
     :param n: number of champions to return.
     :param lane: lane to filter the tier list by (see ``display_lanes()``).
     :param rank: sort by rank (see ``display_ranks()``).
+    :param region: region to filter by (see ``display_regions()``).
     :return: JSON containing rank, champion name, tier and winrate.
     """
     base_url = 'https://lolalytics.com/lol/tierlist/'
+
+    if region:
+        base_url = _sort_by_region(base_url, region)
 
     if lane:
         base_url = _sort_by_lane(base_url, lane)
@@ -193,7 +281,7 @@ def get_tierlist(n: int = 10, lane: str = '', rank: str = ''):
     return json.dumps(result, indent=4)
 
 
-def get_counters(n: int = 10, champion: str = '', rank: str = ''):
+def get_counters(n: int = 10, champion: str = '', rank: str = '', region: str = ''):
     """
     Get the top n counters for a specific champion.
     :param n: number of counters to return.
@@ -207,6 +295,9 @@ def get_counters(n: int = 10, champion: str = '', rank: str = ''):
     counters = f'https://lolalytics.com/lol/{champion}/counters/'
     if rank:
         counters = _sort_by_rank(counters, rank)
+
+    if region:
+        counters = _sort_by_region(counters, region)
 
     counters_html = requests.get(counters)
     tree = html.fromstring(counters_html.content)
@@ -227,7 +318,7 @@ def get_counters(n: int = 10, champion: str = '', rank: str = ''):
     return json.dumps(result, indent=4)
 
 
-def get_champion_data(champion: str, lane: str = '', rank: str = ''):
+def get_champion_data(champion: str, lane: str = '', rank: str = '', region: str = ''):
     """
     Get detailed info about a certain champion.
     :param champion: Champion name to search for.
@@ -245,6 +336,9 @@ def get_champion_data(champion: str, lane: str = '', rank: str = ''):
 
     if rank:
         base_link = _sort_by_rank(base_link, rank)
+        
+    if region:
+        counters = _sort_by_region(base_link, region)
 
     tree = html.fromstring(requests.get(base_link).content)
     result = {}
